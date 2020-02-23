@@ -26,7 +26,6 @@ func insert(db *sql.DB) {
 		log.Fatal(err)
 	}
 
-
 	tx, err := db.Begin()
 	if err != nil {
 		log.Fatal(err)
@@ -44,23 +43,23 @@ func insert(db *sql.DB) {
 
 }
 
-func mustGetProp(mp map[string]interface{}, key string, f1 func(k string, v interface{}) bool, f2 func(v interface{})){
+func mustGetProp(mp map[string]interface{}, key string, f1 func(k string, v interface{}) bool, f2 func(v interface{})) {
 	if val, ok := mp[key]; !ok {
 		log.Fatal("missing user id")
-	} else{
-		if f1(key, val){
+	} else {
+		if f1(key, val) {
 			f2(val)
 		}
 	}
 }
 
-func getProp(mp map[string]string, key string, f func(v interface{})){
+func getProp(mp map[string]string, key string, f func(v interface{})) {
 	if val, ok := mp["value_type"]; ok {
-       f(val)
-  	}
+		f(val)
+	}
 }
 
-func getString(mp map[string]string, mpKey string, dbField string) (string) {
+func getString(mp map[string]string, mpKey string, dbField string) string {
 	if val, ok := mp[mpKey]; ok {
 		return fmt.Sprintf(" %s = '%s'", dbField, val)
 	}
@@ -72,19 +71,23 @@ func update(db *sql.DB) {
 	var mp = map[string]string{}
 
 	mp["user_id"] = "1"
-	mp["value"] = `{"bob":"diane"}`
-	mp["key"] = "couple"
+	mp["value"] = `{"bob":3}`
+	mp["key"] = "couple3"
 	mp["value_type"] = "string"
 	mp["added"] = "false"
 
 	var userId = mp["user_id"]
 
+	if userId == "" {
+		log.Fatal("Missing user_id")
+	}
+
 	var setString = ""
 
-	for p, v := range []string{"user_id","value","key","value_type","added"} {
+	for p, v := range []string{"user_id", "value", "key", "value_type", "added"} {
 		if p < 4 {
 			setString = setString + getString(mp, v, v) + ","
-		}else {
+		} else {
 			setString = setString + getString(mp, v, v)
 		}
 	}
@@ -93,28 +96,48 @@ func update(db *sql.DB) {
 
 	//var err error
 
-	query := fmt.Sprintf("UPDATE user_map_table SET %s WHERE user_id = %s", setString, userId);
-
-	log.Println("raw query:", query)
-    rows, err  := db.Query(query)
-
-    log.Println("rows:",rows);
-
-
-    if err != nil {
-    	log.Fatal(err)
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
 	}
-	//tx, err := db.Begin()
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//
-	//
-	//err = tx.Commit()
-	//
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
+
+	query := fmt.Sprintf("UPDATE user_map_table SET %s WHERE user_id = %s ;", setString, userId)
+	stmt, err := tx.Prepare(query)
+
+	if err != nil {
+		log.Fatalln(
+			err,
+			"Had to rollback due to error, if there was a rollback error, this is it:",
+			tx.Rollback(),
+		)
+	}
+
+	defer stmt.Close()
+
+	rows, err := stmt.Exec()
+
+	if err != nil {
+		log.Fatalln(
+			err,
+			"Had to rollback due to error, if there was a rollback error, this is it:",
+			tx.Rollback(),
+		)
+		return;
+	}
+
+	//log.Println("raw query:", query)
+	//rows, err := db.Query(query)
+
+	log.Println("rows:", rows)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 }
 
