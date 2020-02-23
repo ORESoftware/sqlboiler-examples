@@ -1,0 +1,40 @@
+{
+  "pkgname": "model",
+  "output": "v1/model",
+  "psql": {
+    "dbname": "postgres",
+    "host": "localhost",
+    "user": "postgres",
+    "pass": "postgres",
+    "blacklist": []
+  },
+  "types": [
+    {
+      "match": {
+        "type": "types.Decimal"
+      },
+      "replace": {
+        "type": "apd.Decimal"
+      },
+      "imports": {
+        "third_party": [
+          "github.com/cockroachdb/apd"
+        ]
+      }
+    },
+    {
+      "match": {
+        "db_type": "uuid",
+        "nullable": false
+      },
+      "replace": {
+        "type": "uuid.UUID"
+      },
+      "imports": {
+        "third_party": [
+          "github.com/google/uuid"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+pkgname = "model"
+output = "v1/model"
+
+[psql]
+dbname = "postgres"
+host = "localhost"
+user = "postgres"
+pass = "postgres"
+blacklist = []
+
+[[types]]
+    [types.match]
+        type = "types.Decimal"
+    [types.replace]
+        type = "apd.Decimal"
+    [types.imports]
+        third_party = ['"github.com/cockroachdb/apd"']
+
+[[types]]
+    [types.match]
+        db_type = "uuid"
+        nullable = false
+    [types.replace]
+        type = "uuid.UUID"
+    [types.imports]
+        third_party = ['"github.com/google/uuid"']
