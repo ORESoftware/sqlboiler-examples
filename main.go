@@ -114,7 +114,7 @@ func update(db *sql.DB) {
 
 	defer stmt.Close()
 
-	rows, err := stmt.Exec()
+	result, err := stmt.Exec()
 
 	if err != nil {
 		log.Fatalln(
@@ -126,9 +126,9 @@ func update(db *sql.DB) {
 	}
 
 	//log.Println("raw query:", query)
-	//rows, err := db.Query(query)
+	//result, err := db.Query(query)
 
-	log.Println("rows:", rows)
+	log.Println("result:", result)
 	if err != nil {
 		log.Fatal(err)
 	}
