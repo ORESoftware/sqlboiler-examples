@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-
+"log"
 	"github.com/friendsofgo/errors"
 	"github.com/volatiletech/sqlboiler/boil"
 	"github.com/volatiletech/sqlboiler/queries"
@@ -674,8 +674,11 @@ func (o *UserMapTable) Insert(ctx context.Context, exec boil.ContextExecutor, co
 	}
 
 	if len(cache.retMapping) != 0 {
+		log.Println("ctx 1:", ctx);
+
 		err = exec.QueryRowContext(ctx, cache.query, vals...).Scan(queries.PtrsFromMapping(value, cache.retMapping)...)
 	} else {
+		log.Println("ctx 2:", ctx);
 		_, err = exec.ExecContext(ctx, cache.query, vals...)
 	}
 
