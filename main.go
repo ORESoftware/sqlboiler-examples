@@ -9,7 +9,160 @@ import (
 	"github.com/volatiletech/sqlboiler/boil"
 	"log"
 	_ "github.com/lib/pq"
+	"os"
+	"regexp"
+	"strings"
+	q "github.com/volatiletech/sqlboiler/queries/qm"
 )
+
+type WhereCondition struct {
+	LHS string
+	RHS string
+	op  string
+}
+
+func printRows(rows *sql.Rows){
+	defer rows.Close()
+
+	for rows.Next() {
+
+		var a string
+		var b string
+		var c string
+		var d string
+		var e string
+		var f string
+
+		var row = []interface{}{&a, &b, &c, &d,&e, &f}
+
+
+		err := rows.Scan(row...)
+		if err != nil {
+			log.Fatal(err)
+		}
+		r, err := json.Marshal(row)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("row:", string(r));
+	}
+}
+
+func printResult(r sql.Result){
+	log.Println("result:", r)
+}
+
+func getCleanJoin(db *sql.DB) {
+
+	var limit = 500
+	var fields = []string{"*"}
+	var mappedFields = []string{}
+
+	var space = regexp.MustCompile(`\s+`)
+
+	for _, v := range fields {
+		// replace all white space in field name, for sanitation
+		str := space.ReplaceAllString(v, "")
+		mappedFields = append(mappedFields, str)
+	}
+
+	if len(mappedFields) < 1 {
+		mappedFields = []string{"*"};
+	}
+
+	//rows, err := model.UserTables(
+	//	q.Select(mappedFields...),
+	//	q.Limit(limit),
+	//	q.Where("handle = ?", "dog")).All(context.Background(), db)
+
+	rows, err := model.NewQuery(
+		q.Select(mappedFields...),
+		q.Limit(limit),
+		q.From("user_table u"),
+		q.InnerJoin("user_map_table t on u.id = t.user_id"),
+		q.Where("handle = ?", "dog")).Query(db)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	printRows(rows)
+}
+
+func getClean(db *sql.DB) {
+
+	var limit = 500
+	var fields = []string{"*"}
+	var mappedFields = []string{}
+
+	var space = regexp.MustCompile(`\s+`)
+
+	for _, v := range fields {
+		// replace all white space in field name, for sanitation
+		str := space.ReplaceAllString(v, "")
+		mappedFields = append(mappedFields, str)
+	}
+
+	if len(mappedFields) < 1 {
+		mappedFields = []string{"*"};
+	}
+
+	//rows, err := model.UserTables(
+	//	q.Select(mappedFields...),
+	//	q.Limit(limit),
+	//	q.Where("handle = ?", "dog")).All(context.Background(), db)
+
+	rows, err := model.NewQuery(
+		q.Select(mappedFields...),
+		q.Limit(limit),
+		q.From("user_table"),
+		q.Where("handle = ?", "dog")).Query(db)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	printRows(rows)
+}
+
+func get(db *sql.DB) {
+
+	var limit = 500
+	var fields = []string{"*"}
+	var whereClauses = []WhereCondition{}
+
+	var tableName = "user_table"
+	var mappedFields = []string{}
+
+	var space = regexp.MustCompile(`\s+`)
+
+	for _, v := range fields {
+		// replace all white space in field name, for sanitation
+		str := space.ReplaceAllString(v, "")
+		mappedFields = append(mappedFields, str)
+	}
+
+	var allFields = strings.Join(mappedFields, ",")
+
+	var whereClause = ""
+	for _, v := range whereClauses {
+		whereClause = whereClause + fmt.Sprintf("'%s' %s '%s'", v.LHS, v.op, v.RHS)
+	}
+
+	if whereClause != "" {
+		whereClause = " WHERE " + whereClause
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM %s %s LIMIT %v", allFields, tableName, whereClause, limit)
+	log.Println("raw query:", query)
+	rows, err := db.Query(query)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	printRows(rows)
+}
 
 func insert(db *sql.DB) {
 
@@ -122,13 +275,14 @@ func update(db *sql.DB) {
 			"Had to rollback due to error, if there was a rollback error, this is it:",
 			tx.Rollback(),
 		)
-		return;
+		return
 	}
 
 	//log.Println("raw query:", query)
 	//result, err := db.Query(query)
 
-	log.Println("result:", result)
+	printResult(result);
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -148,7 +302,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	getCleanJoin(db)
+	getClean(db)
+	get(db)
 	insert(db)
 	update(db)
+
+	log.Println("Exiting with code:", 0)
+	os.Exit(0)
 
 }
