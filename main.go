@@ -77,6 +77,7 @@ func printRows(rows *sql.Rows) {
 		Name:   "agage",
 		Fields: m,
 	})
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -87,6 +88,7 @@ func printRows(rows *sql.Rows) {
 		Name:   "agage",
 		Fields: m,
 	})
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -186,11 +188,17 @@ func getClean(db *sql.DB) {
 	//	q.Limit(limit),
 	//	q.Where("handle = ?", "dog")).All(context.Background(), db)
 
+	//rows, err := model.NewQuery(
+	//	q.Select(mappedFields...),
+	//	q.Limit(limit),
+	//	q.From("user_table"),
+	//	q.Where("handle = ?", "dog")).Query(db)
+
 	rows, err := model.NewQuery(
 		q.Select(mappedFields...),
 		q.Limit(limit),
-		q.From("user_table"),
-		q.Where("handle = ?", "dog")).Query(db)
+		q.From("user_map_table"),
+	).Query(db)
 
 	if err != nil {
 		log.Fatal(err)
