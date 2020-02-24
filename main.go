@@ -21,7 +21,7 @@ type WhereCondition struct {
 	op  string
 }
 
-func printRows(rows *sql.Rows){
+func printRows1(rows *sql.Rows) {
 	defer rows.Close()
 
 	for rows.Next() {
@@ -33,8 +33,7 @@ func printRows(rows *sql.Rows){
 		var e string
 		var f string
 
-		var row = []interface{}{&a, &b, &c, &d,&e, &f}
-
+		var row = []interface{}{&a, &b, &c, &d, &e, &f}
 
 		err := rows.Scan(row...)
 		if err != nil {
@@ -44,11 +43,86 @@ func printRows(rows *sql.Rows){
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Println("row:", string(r));
+		log.Println("row:", string(r))
 	}
 }
 
-func printResult(r sql.Result){
+type HeaderMap struct {
+	FieldName    string
+	DatabaseType string
+	GolangType   string
+}
+
+type DbTable struct {
+	Name   string
+	Fields map[string]HeaderMap
+}
+
+func printRows(rows *sql.Rows) {
+
+	var h = map[string]string{}
+	var m = map[string]HeaderMap{}
+	colTypes, err := rows.ColumnTypes()
+
+	for _, s := range colTypes {
+		log.Println("cols type:", s.ScanType(), s.DatabaseTypeName())
+		m[s.Name()] = HeaderMap{
+			FieldName:    s.Name(),
+			DatabaseType: s.DatabaseTypeName(),
+			GolangType:   s.ScanType().String(),
+		}
+	}
+
+	z, err := json.Marshal(DbTable{
+		Name:   "agage",
+		Fields: m,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	h["cm_db_type"] = string(z)
+
+	x, err := json.Marshal(DbTable{
+		Name:   "agage",
+		Fields: m,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("map:", string(x))
+
+	cols, err := rows.Columns() // Remember to check err afterwards
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r, err := json.Marshal(cols)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("cols:", string(r))
+	for rows.Next() {
+		var vals = make([]interface{}, len(cols))
+		for i, _ := range cols {
+			//vals[i] = new(sql.RawBytes)
+			vals[i] = new(string)
+		}
+		err = rows.Scan(vals...)
+		if err != nil {
+			log.Fatal(err)
+		}
+		r, err := json.Marshal(vals)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("row:", string(r))
+	}
+}
+
+func printResult(r sql.Result) {
 	log.Println("result:", r)
 }
 
@@ -67,7 +141,7 @@ func getCleanJoin(db *sql.DB) {
 	}
 
 	if len(mappedFields) < 1 {
-		mappedFields = []string{"*"};
+		mappedFields = []string{"*"}
 	}
 
 	//rows, err := model.UserTables(
@@ -104,7 +178,7 @@ func getClean(db *sql.DB) {
 	}
 
 	if len(mappedFields) < 1 {
-		mappedFields = []string{"*"};
+		mappedFields = []string{"*"}
 	}
 
 	//rows, err := model.UserTables(
@@ -281,8 +355,7 @@ func update(db *sql.DB) {
 	//log.Println("raw query:", query)
 	//result, err := db.Query(query)
 
-	printResult(result);
-
+	printResult(result)
 	if err != nil {
 		log.Fatal(err)
 	}
